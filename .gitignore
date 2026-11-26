@@ -1,0 +1,16 @@
+# Terraform の状態ファイルや作業ファイル（秘密情報が入ることがあるので Git に入れない）
+infra/.terraform/
+infra/.terraform.lock.hcl.bak
+infra/*.tfstate
+infra/*.tfstate.*
+infra/terraform.tfvars
+infra/.build/
+crash.log
+
+# Python
+__pycache__/
+.pytest_cache/
+*.pyc
+
+# OS
+.DS_Store

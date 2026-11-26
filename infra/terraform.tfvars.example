@@ -1,0 +1,8 @@
+# このファイルを terraform.tfvars にコピーして使う（terraform.tfvars は Git に入れない）
+# cp terraform.tfvars.example terraform.tfvars
+
+# アラームと予算アラートの通知先。空のままなら通知は作られない
+alert_email = ""
+
+# 月の予算（ドル）
+budget_limit_usd = "1"
