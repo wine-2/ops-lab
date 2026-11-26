@@ -63,6 +63,16 @@ def test_正常な注文は201で保存される():
 
 
 @mock_aws
+def test_Base64で届いた本文も読める():
+    # Content-Type なしで送ると HTTP API は本文を Base64 にして渡してくる（実環境で見つけた不具合）
+    import base64 as b64
+    h = load_handler()
+    body = b64.b64encode(json.dumps({"items": [{"price": 300}]}).encode()).decode()
+    res = h.lambda_handler({"body": body, "isBase64Encoded": True}, Ctx())
+    assert res["statusCode"] == 201
+
+
+@mock_aws
 def test_itemsが無いと400():
     h = load_handler()
     res = h.lambda_handler(event({}), Ctx())

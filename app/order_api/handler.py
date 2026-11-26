@@ -12,6 +12,7 @@ DevOps Agent に調査させるため、次の仕掛けを入れています。
 本番の決済サービスは呼ばず、待ち時間をランダムに発生させて「外部決済」を模擬しています。
 """
 
+import base64
 import json
 import os
 import random
@@ -142,10 +143,14 @@ def lambda_handler(event, context):
 
     # ---- 入力チェック -------------------------------------------------
     try:
-        order = json.loads(event.get("body") or "{}")
+        raw = event.get("body") or "{}"
+        # HTTP API は Content-Type が JSON 以外だと本文を Base64 にして渡してくるので、戻してから読む
+        if event.get("isBase64Encoded"):
+            raw = base64.b64decode(raw).decode("utf-8")
+        order = json.loads(raw)
         if not is_valid_order(order):
             return response(400, {"error": "invalid order"})
-    except json.JSONDecodeError:
+    except (json.JSONDecodeError, ValueError, UnicodeDecodeError):
         return response(400, {"error": "invalid json"})
 
     order_id = str(uuid.uuid4())

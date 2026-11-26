@@ -93,6 +93,7 @@ python tools/load.py --url "$(terraform -chdir=infra output -raw api_url)" --min
 ### 4. DevOps Agent の設定
 
 1. DevOps Agent のコンソールで Agent Space を作る（エージェントアクションは無効のまま）
+   - Terraform で作ったリソースを構成図（トポロジー）に載せるには、同じリージョンで AWS Resource Explorer を有効にしておく（CloudFormation で作ったものでないと、Resource Explorer 経由で見つけるため）
 2. `agent/AGENTS.md` と `agent/skills/order-api-incident/SKILL.md` をナレッジとスキルに登録する
 3. アラームから自動で調査させる場合は、Agent Space の Webhook を発行し、SNS トピック（`terraform output alerts_topic_arn`）とつなぐ
 4. 調査結果が外れたら、フィードバック機能で正解を教える
@@ -102,6 +103,18 @@ python tools/load.py --url "$(terraform -chdir=infra output -raw api_url)" --min
 ```bash
 cd infra && terraform destroy
 ```
+
+## 検証結果（途中経過）
+
+| シナリオ | スキル | 結果 |
+|---|---|---|
+| 1 設定ミス | なし | 約4分で根本原因（SSM パラメータの手動変更）を特定。再デプロイ不要と判断し、再発防止策まで提案 |
+
+詳しくは [docs/verification-log.md](docs/verification-log.md) を見てください。
+
+### デプロイ方法のメモ
+
+自分の PC に何もインストールせず、AWS コンソールの CloudShell（ブラウザのターミナル）で `git clone` → `terraform apply` しています。管理者の IAM ユーザーでログインした状態のまま使えるので、アクセスキーを発行せずに済みます。
 
 ## 費用
 
