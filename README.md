@@ -112,13 +112,24 @@ cd infra && terraform destroy
 | 2 不具合のあるリリース | なし | 約5分で特定。「v1.4.0 のリリース」に見えても、コードのハッシュが同じことから「変わったのは設定だけ、コードの戻しは不要」と判断 |
 | 3 DB の容量不足 | なし | 約4分半で書き込み容量の引き下げ（5→1）を特定。ただし直近のメトリクスの空白を「沈静化した」と誤認 |
 
-スキルなしでも3つとも原因は正解でした。差が出るとしたら「誤認」や「推測の混ざり方」だと見て、次はスキルとルールを入れた状態で同じシナリオと複合シナリオを回します。
+| 複合（リリース＋設定ミス） | なし | 約5分で2つの原因を両方特定。「500 はリリース、504 は設定」と対応づけ、「片方だけ戻しても回復しない」と判断 |
+
+スキルなしでも4つとも原因は正解でした。差が出るとしたら「誤認」「推測の混ざり方」「報告の形のばらつき」だと見て、次はスキルとルールを入れた状態で同じシナリオを回します。
 
 詳しくは [docs/verification-log.md](docs/verification-log.md) を見てください。
 
 ### デプロイ方法のメモ
 
 自分の PC に何もインストールせず、AWS コンソールの CloudShell（ブラウザのターミナル）で `git clone` → `terraform apply` しています。管理者の IAM ユーザーでログインした状態のまま使えるので、アクセスキーを発行せずに済みます。
+
+CloudShell は、しばらく触らないとセッションが切れます。残るのはホームディレクトリ（`~`）だけで、`dnf` で入れた Terraform は消えます。state ファイルは `~/ops-lab/infra` にあるので無事です。入れ直したら `~/bin` にコピーしておくと、次からは入れ直さずに使えます。
+
+```bash
+sudo dnf install -y dnf-plugins-core
+sudo dnf config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
+sudo dnf install -y terraform
+mkdir -p ~/bin && cp /usr/bin/terraform ~/bin/   # ホームに置けば次のセッションでも残る
+```
 
 ## 費用
 
