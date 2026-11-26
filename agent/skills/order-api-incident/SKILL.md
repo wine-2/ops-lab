@@ -37,11 +37,14 @@ error_type ごとの意味は次のとおり。
 - SSM パラメータ `/ops-lab/payment/timeout_ms` の現在の値と、変更履歴（パラメータの履歴、CloudTrail の PutParameter）を確認する。本番の正しい値は 3000。
 - 保存クエリ `ops-lab/timeout-config-changes` で、アプリが新しい値を読み込んだ時刻を確認する。
 - 値が小さくなった時刻と、エラーが増え始めた時刻が合っているかを比べる。
+- アプリは SSM の値を30秒キャッシュして読み直す。値を戻せば30秒以内に反映され、Lambda の再デプロイは要らない。
 
 ## ステップ4：リリースの変更を確認する
 
 - Lambda 関数 `ops-lab-order-api` の環境変数 `APP_VERSION` と `FAULT_MODE`、最終更新時刻を確認する。CloudTrail の UpdateFunctionConfiguration と UpdateFunctionCode も見る。
+- この Agent Space のロールでは lambda:GetFunction が拒否されることがある。そのときは CloudTrail の UpdateFunctionConfiguration の requestParameters から環境変数の値を読む。
 - `FAULT_MODE` が `none` 以外なら、バグ入りの設定でリリースされている。
+- コードが変わったかどうかは、CodeSha256 を変更の前後で比べて判断する。同じなら変わったのは設定だけで、コードのロールバックは要らない。
 - 説明文（description）の内容だけで判断しない。エラーの起きた注文の特徴（クーポンの有無）と、例外の内容を突き合わせる。
 
 ## ステップ5：DB の状態を確認する
@@ -52,7 +55,9 @@ error_type ごとの意味は次のとおり。
 ## ステップ6：結論を出す前のチェック
 
 - 原因の候補が複数あるときは、それぞれ「エラーが始まった時刻と変更の時刻が合うか」で絞り込む。
+- 原因が2つ以上重なっていないかを確かめる。error_type や HTTP ステータス（500 と 504 など）ごとに始まった時刻を分け、それぞれに対応する変更があるかを見る。重なっているなら、片方だけ戻しても直らないと書く。
 - 「ロールバックで直るか」を必ず判断する。原因が SSM や DB の設定にあるなら、ロールバックでは直らない。
+- 「今も続いているか」は、アラームの現在の状態と最新ログの時刻で判断する。直近数分のメトリクスの空白は、回復の証拠にしない。
 
 ## 報告フォーマット
 
@@ -61,7 +66,8 @@ error_type ごとの意味は次のとおり。
 ```json
 {
   "root_cause": "根本原因を1文で",
-  "cause_layer": "config | application | database | unknown",
+  "cause_layer": "config | application | database | multiple | unknown",
+  "still_ongoing": true,
   "started_at": "エラーが増え始めた時刻（ISO 8601）",
   "evidence": [
     {"source": "ログ・メトリクス・変更履歴の名前", "time": "時刻", "value": "見つけた値"}
@@ -78,6 +84,7 @@ error_type ごとの意味は次のとおり。
 {
   "root_cause": "SSM パラメータ /ops-lab/payment/timeout_ms が 3000 から 50 に変更され、決済がタイムアウトしている",
   "cause_layer": "config",
+  "still_ongoing": true,
   "started_at": "2026-12-01T10:04:00+09:00",
   "evidence": [
     {"source": "CloudTrail PutParameter", "time": "2026-12-01T10:03:41+09:00", "value": "/ops-lab/payment/timeout_ms = 50"},
