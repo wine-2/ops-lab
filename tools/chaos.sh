@@ -37,7 +37,7 @@ case "${1:-}" in
     ;;
   db-throttle)
     terraform -chdir=infra apply -auto-approve -var="table_write_capacity=1"
-    echo "DB の書き込み容量を 1 にしました。load.py を --rate 8 で流してください"
+    echo "DB の書き込み容量を 1 にしました。load.py を --rate 4 で流してください（容量5のうちから流しておく）"
     echo "（DynamoDB には貯めておける余力があるので、詰まり始めるまで数分かかることがあります）"
     ;;
   reset)
